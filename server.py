@@ -1,6 +1,6 @@
 import socket
 import threading
-
+import json
 class Server:
   def __init__(self, host, port):
     self.host = host
@@ -10,16 +10,15 @@ class Server:
     self.peerHost = {}
   
   def clientHandle(self, clientSocket, clientAddress):
-    clientMessage = clientSocket.recv(1024).decode('utf-8')
-    print(f"Client send to server: {clientMessage}")
-    print(clientMessage.split(" ")[0])
-    if(clientMessage.split(" ")[0] == "peerHost:"):
-      peerServerHostName = clientMessage.split(' ')[1]
-      self.peerHost[clientAddress[1]] = peerServerHostName
-      print(f"Current peerHost: {self.peerHost}")
-    elif (clientMessage.split == "get peer host"):
-      pass  
-    
+    while True:
+      clientMessage = clientSocket.recv(1024).decode('utf-8')
+      print(f"Client send to server: {clientMessage}")
+      if(clientMessage.split(" ")[0] == "peerHost:"):
+        peerServerHostName = clientMessage.split(' ')[1]
+        self.peerHost[clientAddress[1]] = peerServerHostName
+        print(f"Current peerHost: {self.peerHost}")
+      elif (clientMessage == "get peer host"):
+        clientSocket.sendall(json.dumps(self.peerHost).encode('utf-8'))
   def run(self):
     self.serverSocket.bind((self.host, self.port))
     self.serverSocket.listen(5)

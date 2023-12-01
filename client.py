@@ -1,11 +1,15 @@
 import socket
 import threading
+import json
+import time
 
+# global peerList
 class ServerInClient:
   def __init__(self, host, port):
     self.host = host
     self.port = port
     self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.connections = {}
     
   def clientHandle(self, clientSocket, clientAddress):
     clientMessage = clientSocket.recv(1024).decode('utf-8')
@@ -33,6 +37,13 @@ class ClientInClient:
   def __init__(self, host, port):
     self.host = host
     self.port = port
+    self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+  def connect(self):
+    self.clientSocket.connect((self.host, self.port))
+    
+  def sendCommand(self, command):
+    self.clientSocket.send(command.encode('utf-8'))
 
 
 class Client:
@@ -40,14 +51,28 @@ class Client:
     self.host = host
     self.port = port
     self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.peerList = {}
     
   def broadcast(self):
-    serverMessage = self.clientSocket.recv(1024).decode('utf-8')
-    print(f"Server return to message: {serverMessage}")
+    while True:
+      serverMessage = self.clientSocket.recv(1024).decode('utf-8')
+      self.peerList = json.loads(serverMessage)
+      print(f"Server return to message: {json.loads(serverMessage)}")
     
   def sendCommand(self, command):
-    print(command)
     self.clientSocket.send(command.encode('utf-8'))
+  
+  def sendToPeer(self):
+    # hostname = command.split(' ')[1]
+    # host = hostname.split('/')[0]
+    # port = hostname.split()
+    # message = command.split(' ')[2]
+    for key in self.peerList:
+      host = self.peerList[key].split('/')[0]
+      port = int(self.peerList[key].split('/')[1])
+      client = ClientInClient(host, port)
+      client.connect()
+      client.sendCommand("hello")
   
   def connect(self):
     try:
@@ -81,5 +106,8 @@ if __name__ == '__main__':
       inputCommand = input("Enter your command:")
       if(inputCommand == "get list"):
         client.sendCommand(f'get peer host')
+      elif(inputCommand=='ping'):
+        client.sendToPeer()
+      time.sleep(1)
   except KeyboardInterrupt:
     client.close()

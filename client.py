@@ -12,8 +12,15 @@ class ServerInClient:
     self.connections = {}
     
   def clientHandle(self, clientSocket, clientAddress):
-    clientMessage = clientSocket.recv(1024).decode('utf-8')
-    print(f"Client send to server: {clientMessage}") 
+    while True:
+      clientMessage = clientSocket.recv(1024).decode('utf-8')
+      print(f"\nClient send to server: {clientMessage}") 
+      inputResponse = input("Send something to others: ")
+      # get list from server
+      client.sendCommand(f'get peer host')
+      client.sendToPeer(inputResponse)
+    
+    
     
   def run(self):
     self.serverSocket.bind((self.host, self.port))
@@ -62,17 +69,18 @@ class Client:
   def sendCommand(self, command):
     self.clientSocket.send(command.encode('utf-8'))
   
-  def sendToPeer(self):
-    # hostname = command.split(' ')[1]
-    # host = hostname.split('/')[0]
-    # port = hostname.split()
-    # message = command.split(' ')[2]
+  def sendToPeer(self, command):
+    
     for key in self.peerList:
-      host = self.peerList[key].split('/')[0]
-      port = int(self.peerList[key].split('/')[1])
-      client = ClientInClient(host, port)
-      client.connect()
-      client.sendCommand("hello")
+      # print(f"{key} vs {self.clientSocket.getsockname()[1]}")
+      # print(int(key) == self.clientSocket.getsockname()[1])
+      if(int(key) != self.clientSocket.getsockname()[1]): # not ping to its own server
+        host = self.peerList[key].split('/')[0]
+        port = int(self.peerList[key].split('/')[1])
+        print(f"Start ping to {host}/{port}")
+        client = ClientInClient(host, port)
+        client.connect()
+        client.sendCommand(command)
   
   def connect(self):
     try:
@@ -102,12 +110,11 @@ if __name__ == '__main__':
     port = 8080
     client = Client(host, port)
     client.connect()
-    while True:
-      inputCommand = input("Enter your command:")
-      if(inputCommand == "get list"):
-        client.sendCommand(f'get peer host')
-      elif(inputCommand=='ping'):
-        client.sendToPeer()
-      time.sleep(1)
+    # inputCommand = input("Enter your command:")
+    # if(inputCommand == "get list"):
+    client.sendCommand(f'get peer host')
+    # elif(inputCommand=='ping'):
+    client.sendToPeer('hello')
+    # time.sleep(1)
   except KeyboardInterrupt:
     client.close()
